@@ -86,13 +86,14 @@ def LXC(host):
 
 
         def create(self, name, tmpl_opts={}, **kwargs):
-            tmpl_opts = ('%s%s %s' % ('-' if len(opt) == 1 else '--',
-                                     opt,
-                                     value if isinstance(value, str) else '')
-                         for opt, value in tmpl_opts.items())
-            return self._host.execute('lxc-create',
-                                      '-- %s' %  ' '.join(tmpl_opts),
-                                      name=name, **kwargs)
+            def format_opt(opt, value):
+                opt = '%s%s' % ('-' if len(opt) == 1 else '--', opt)
+                return '%s %s' % (opt, value if isinstance(value, str) else '')
+
+            tmpl_args = ' '.join(format_opt(opt, value) for opt, value in tmpl_opts.items())
+            with self._host.set_controls(escape_args=False):
+                return self._host.execute('lxc-create', '--', tmpl_args, name=name, **kwargs)
+
 
         def destroy(self, name, **kwargs):
             return self._host.execute('lxc-destroy', name=name, **kwargs)
